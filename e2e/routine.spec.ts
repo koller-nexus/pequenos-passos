@@ -108,7 +108,7 @@ test("reloads offline after the first visit", async ({ page, context }) => {
     if ("serviceWorker" in navigator) {
       await navigator.serviceWorker.ready;
     }
-    const cache = await caches.open("pequenos-passos-v2");
+    const cache = await caches.open("pequenos-passos-v3");
     await cache.match("/");
   });
 

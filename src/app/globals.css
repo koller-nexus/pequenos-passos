@@ -80,6 +80,54 @@ input:disabled {
   background: var(--color-lime);
 }
 
+.parent-report-day {
+  break-inside: avoid;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .no-print,
+  .print-guidance {
+    display: none !important;
+  }
+
+  .parent-report-day {
+    grid-template-columns: 7rem 1fr;
+    gap: 1rem;
+    padding-block: 0.8rem;
+    border-top-width: 2px;
+  }
+
+  .parent-report-day h2 {
+    font-size: 1.15rem;
+  }
+
+  .parent-report-day h3 {
+    margin-top: 0;
+  }
+
+  .parent-report-day li {
+    min-height: 0;
+    padding-block: 0.18rem;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    break-inside: avoid;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

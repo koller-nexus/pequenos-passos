@@ -1,6 +1,7 @@
-const CACHE_NAME = "pequenos-passos-v2";
+const CACHE_NAME = "pequenos-passos-v3";
 const APP_SHELL = [
   "/",
+  "/familia",
   "/offline.html",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -36,17 +37,23 @@ async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
   await cache.addAll(APP_SHELL);
 
-  const homeResponse = await fetch("/", { cache: "reload" });
-  if (!homeResponse.ok) {
-    throw new Error("Não foi possível preparar o aplicativo offline.");
-  }
+  const pages = await Promise.all(
+    ["/", "/familia"].map(async (path) => {
+      const response = await fetch(path, { cache: "reload" });
+      if (!response.ok) {
+        throw new Error("Não foi possível preparar o aplicativo offline.");
+      }
 
-  await cache.put("/", homeResponse.clone());
-  const html = await homeResponse.text();
+      await cache.put(path, response.clone());
+      return response.text();
+    }),
+  );
   const assetPaths = [
     ...new Set(
-      [...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+)"/g)].map(
-        (match) => match[1],
+      pages.flatMap((html) =>
+        [...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+)"/g)].map(
+          (match) => match[1],
+        ),
       ),
     ),
   ];

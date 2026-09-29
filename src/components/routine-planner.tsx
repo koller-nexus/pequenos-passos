@@ -6,6 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import Link from "next/link";
 
 import {
   getRoutineByKey,
@@ -31,6 +32,7 @@ import {
   readChildName,
   writeChildName,
 } from "@/lib/child-name";
+import { recordDailyState } from "@/lib/daily-history";
 
 let cachedState: DailyState | null = null;
 let cachedDay: string | null = null;
@@ -96,6 +98,7 @@ function updateCurrentState(updater: (state: DailyState) => DailyState) {
 
   cachedState = updater(state);
   writeDailyState(window.localStorage, cachedState);
+  recordDailyState(window.localStorage, cachedState, localDateKey());
   emitStoreChange();
 }
 
@@ -392,9 +395,17 @@ export function RoutinePlanner() {
               />
             </label>
           </div>
-          <p className="max-w-48 text-right text-sm font-bold text-slate">
-            {formatDate(state.date)}
-          </p>
+          <div className="flex flex-col items-end gap-3">
+            <p className="max-w-48 text-right text-sm font-bold text-slate">
+              {formatDate(state.date)}
+            </p>
+            <Link
+              href="/familia"
+              className="inline-flex min-h-11 items-center border-2 border-ink bg-cobalt px-4 py-2 font-bold text-white hover:bg-ink"
+            >
+              Ver relatório dos pais
+            </Link>
+          </div>
         </div>
         <div className="mt-7">
           <ProgressMeter completed={completed} total={total} />
