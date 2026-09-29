@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Pequenos Passos</title>
+  <rect width="512" height="512" fill="#2E5BFF"/>
+  <path d="M120 350h272v42H120zM164 276h220v42H164zM208 202h176v42H208z" fill="#D9FF57"/>
+  <path d="M112 392h288v30H112z" fill="#FF654F"/>
+</svg>
