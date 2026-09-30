@@ -56,6 +56,23 @@ export function getRecentDateKeys(todayKey: string): string[] {
   });
 }
 
+export function getCurrentWeekDateKeys(todayKey: string): string[] {
+  const today = parseDateKey(todayKey);
+  if (!today) {
+    return [];
+  }
+
+  const mondayOffset = today.getDay() === 0 ? -6 : 1 - today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+
+  return Array.from({ length: HISTORY_WINDOW_DAYS }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return formatDateKey(date);
+  });
+}
+
 export function createDailyHistory(): DailyHistory {
   return { version: 1, days: {} };
 }

@@ -6,6 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 import {
@@ -32,7 +33,15 @@ import {
   readChildName,
   writeChildName,
 } from "@/lib/child-name";
-import { recordDailyState } from "@/lib/daily-history";
+import {
+  getCurrentWeekDateKeys,
+  readDailyHistory,
+  recordDailyState,
+} from "@/lib/daily-history";
+import {
+  buildParentReport,
+  type ParentReportDay,
+} from "@/lib/parent-report";
 
 let cachedState: DailyState | null = null;
 let cachedDay: string | null = null;
@@ -166,6 +175,13 @@ function formatDate(dateKey: string) {
   }).format(new Date(year, month - 1, day));
 }
 
+function formatWeekday(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Intl.DateTimeFormat("pt-BR", { weekday: "short" })
+    .format(new Date(year, month - 1, day))
+    .replace(".", "");
+}
+
 function TaskRow({
   task,
   checked,
@@ -188,12 +204,12 @@ function TaskRow({
         checked={checked}
         disabled={disabled}
         onChange={() => onChange(task.id)}
-        className="mt-1 size-5 shrink-0 accent-cobalt"
+        className="mt-1 size-6 shrink-0 rounded-md accent-cobalt"
       />
       <span
-        className={`text-base leading-6 ${
+        className={`text-base font-bold leading-6 ${
           checked
-            ? "text-slate line-through decoration-coral decoration-2"
+            ? "text-slate line-through decoration-mint decoration-[3px]"
             : "text-ink"
         }`}
       >
@@ -225,8 +241,14 @@ function RoutineTabs({
             aria-current={isToday ? "date" : undefined}
             aria-pressed={isSelected}
             onClick={() => onSelect(routine.key)}
-            className={`min-h-11 shrink-0 border-2 border-ink px-3 py-2 text-sm font-bold ${
-              isSelected ? "bg-ink text-paper" : "bg-paper text-ink hover:bg-lime"
+            className={`min-h-11 shrink-0 rounded-xl border-2 border-ink px-3 py-2 text-sm font-bold ${
+              isSelected
+                ? "bg-ink text-white"
+                : routine.key === "mon-wed"
+                  ? "bg-sky text-ink hover:-translate-y-0.5"
+                  : routine.key === "tue-thu-fri"
+                    ? "bg-sun text-ink hover:-translate-y-0.5"
+                    : "bg-mint text-ink hover:-translate-y-0.5"
             }`}
           >
             {routine.shortLabel}
@@ -249,11 +271,11 @@ function ProgressMeter({
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="font-display text-2xl font-bold">
+      <div className="flex items-end justify-between gap-4">
+        <p className="font-display text-2xl font-bold leading-tight text-white">
           {completed} de {total} concluídas
         </p>
-        <p className="font-display text-xl font-bold text-cobalt">{percentage}%</p>
+        <p className="font-display text-3xl font-bold tabular-nums text-lime">{percentage}%</p>
       </div>
       <div
         role="progressbar"
@@ -261,14 +283,109 @@ function ProgressMeter({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={completed}
-        className="mt-2 h-4 border-2 border-ink bg-mist"
+        className="mt-3 h-5 overflow-hidden rounded-full border-2 border-white bg-white/25"
       >
         <div
-          className="h-full bg-cobalt transition-[width] duration-300 motion-reduce:transition-none"
+          className={`h-full rounded-full transition-[width] duration-500 ease-out motion-reduce:transition-none ${
+            percentage === 100 ? "bg-mint" : "bg-sun"
+          }`}
           style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
+  );
+}
+
+function WeekProgress({
+  days,
+  todayKey,
+  completed,
+  total,
+  percentage,
+}: {
+  days: ParentReportDay[];
+  todayKey: string;
+  completed: number;
+  total: number;
+  percentage: number;
+}) {
+  return (
+    <section
+      aria-labelledby="week-progress-title"
+      className="rounded-2xl border-2 border-ink bg-sky/70 p-4 sm:p-5"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="week-progress-title" className="font-display text-3xl font-bold leading-tight">
+            Andamento da semana
+          </h2>
+          <p className="mt-1 text-sm font-bold text-slate">Segunda a domingo</p>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-4xl font-bold tabular-nums text-cobalt">{percentage}%</p>
+          <p className="text-sm font-bold text-slate">
+            {completed} de {total} passos até agora
+          </p>
+        </div>
+      </div>
+
+      <div
+        role="progressbar"
+        aria-label="Andamento da semana até agora"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={completed}
+        className="mt-4 h-5 overflow-hidden rounded-full border-2 border-ink bg-white"
+      >
+        <div
+          className="h-full rounded-full bg-coral transition-[width] duration-500 ease-out motion-reduce:transition-none"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+
+      <ol className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
+        {days.map((day) => {
+          const isToday = day.dateKey === todayKey;
+          const isFuture = day.dateKey > todayKey;
+          const percentageLabel = isFuture
+            ? "•"
+            : day.registered
+              ? `${day.percentage}%`
+              : "—";
+          const statusLabel = isFuture
+            ? "previsto"
+            : day.registered
+              ? `${day.percentage}% concluído`
+              : "sem registro";
+
+          return (
+            <li
+              key={day.dateKey}
+              aria-label={`${formatDate(day.dateKey)}: ${statusLabel}`}
+              className={`min-w-0 rounded-xl border-2 px-1 py-2 text-center ${
+                isToday
+                  ? "border-cobalt bg-white"
+                  : isFuture
+                    ? "border-mist bg-white/55"
+                    : day.percentage === 100
+                      ? "border-ink bg-mint"
+                      : day.registered
+                        ? "border-ink bg-sun"
+                        : "border-mist bg-white/75"
+              }`}
+            >
+              <p className="text-xs font-bold text-slate">{formatWeekday(day.dateKey)}</p>
+              <p className="mt-1 font-display text-lg font-bold leading-none tabular-nums">
+                {Number(day.dateKey.slice(-2))}
+              </p>
+              <p className="mt-2 text-xs font-bold leading-3 text-ink tabular-nums">
+                {percentageLabel}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
@@ -300,7 +417,7 @@ function ResetDialog({
     <dialog
       ref={dialogRef}
       onCancel={onCancel}
-      className="m-auto max-w-md border-2 border-ink bg-paper p-0 shadow-[8px_8px_0_var(--color-ink)]"
+      className="m-auto max-w-md rounded-2xl bg-white p-0 shadow-2xl"
     >
       <div className="p-6">
         <h2 className="font-display text-2xl font-bold">Recomeçar o dia?</h2>
@@ -310,14 +427,14 @@ function ResetDialog({
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
             type="button"
-            className="min-h-11 border-2 border-ink px-4 py-2 font-bold"
+            className="min-h-11 rounded-xl border-2 border-ink px-4 py-2 font-bold hover:bg-sky"
             onClick={onCancel}
           >
             Continuar
           </button>
           <button
             type="button"
-            className="min-h-11 border-2 border-ink bg-coral px-4 py-2 font-bold text-ink"
+            className="min-h-11 rounded-xl border-2 border-ink bg-coral px-4 py-2 font-bold text-ink hover:bg-coral/80"
             onClick={onConfirm}
           >
             Recomeçar
@@ -349,6 +466,18 @@ export function RoutinePlanner() {
   const validIds = getValidTaskIds(activeRoutine);
   const total = activePlan.tasks.length + MANDATORY_TASKS.length;
   const completed = state.completed.length + state.mandatoryCompleted.length;
+  const weekReport = buildParentReport({
+    childName,
+    todayKey: state.date,
+    current: state,
+    history: readDailyHistory(window.localStorage, state.date),
+    dateKeys: getCurrentWeekDateKeys(state.date),
+  });
+  const elapsedWeekDays = weekReport.days.filter((day) => day.dateKey <= state.date);
+  const weekCompleted = elapsedWeekDays.reduce((sum, day) => sum + day.completed, 0);
+  const weekTotal = elapsedWeekDays.reduce((sum, day) => sum + day.total, 0);
+  const weekPercentage =
+    weekTotal === 0 ? 0 : Math.round((weekCompleted / weekTotal) * 100);
   const allComplete = isDailyStateComplete(
     state,
     validIds.validRoutineIds,
@@ -375,50 +504,75 @@ export function RoutinePlanner() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-5 pb-16 pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <header className="border-b-4 border-ink pb-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold text-cobalt">Caderno de conquistas</p>
-            <h1 className="mt-1 font-display text-4xl font-bold leading-none sm:text-5xl">
-              Pequenos Passos
-            </h1>
-            <label className="mt-4 block max-w-xs">
-              <span className="text-sm font-bold text-slate">Nome da criança</span>
+    <div className="mx-auto max-w-3xl pb-[max(4rem,env(safe-area-inset-bottom))]">
+      <header className="rounded-b-[32px] bg-cobalt px-5 pb-8 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl border-2 border-white bg-white p-1.5">
+              <Image
+                src="/icons/icon.svg"
+                alt=""
+                width={52}
+                height={52}
+                priority
+                className="size-12"
+              />
+            </div>
+            <div>
+              <h1 className="font-display text-4xl font-bold leading-none sm:text-5xl">
+                Pequenos Passos
+              </h1>
+              <p className="mt-2 max-w-xs text-sm font-bold text-white">
+                Cada tarefa é um passo para uma semana mais leve.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            <p className="rounded-full bg-white/15 px-3 py-1 text-sm font-bold">
+              {formatDate(state.date)}
+            </p>
+            <Link
+              href="/familia"
+              className="inline-flex min-h-11 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-bold text-ink hover:bg-lime"
+            >
+              Ver relatório dos pais
+            </Link>
+          </div>
+        </div>
+        <label className="mt-6 block max-w-xs">
+          <span className="text-sm font-bold text-white">Nome da criança</span>
               <input
                 type="text"
                 value={childName}
                 maxLength={80}
                 placeholder="Como você se chama?"
                 onChange={(event) => updateChildName(event.target.value)}
-                className="mt-1 min-h-11 w-full border-2 border-ink bg-white px-3 py-2 text-base font-bold placeholder:font-normal placeholder:text-slate"
+                className="mt-2 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 text-base font-bold text-ink placeholder:font-normal placeholder:text-slate"
               />
-            </label>
-          </div>
-          <div className="flex flex-col items-end gap-3">
-            <p className="max-w-48 text-right text-sm font-bold text-slate">
-              {formatDate(state.date)}
-            </p>
-            <Link
-              href="/familia"
-              className="inline-flex min-h-11 items-center border-2 border-ink bg-cobalt px-4 py-2 font-bold text-white hover:bg-ink"
-            >
-              Ver relatório dos pais
-            </Link>
-          </div>
-        </div>
-        <div className="mt-7">
+        </label>
+        <div className="mt-6">
           <ProgressMeter completed={completed} total={total} />
         </div>
       </header>
 
-      <section className="py-6">
+      <div className="px-5">
+        <div className="mt-6">
+          <WeekProgress
+            days={weekReport.days}
+            todayKey={state.date}
+            completed={weekCompleted}
+            total={weekTotal}
+            percentage={weekPercentage}
+          />
+        </div>
+
+      <section className="pb-7 pt-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-slate">Rotina de hoje</h2>
-            <p className="font-display text-3xl font-bold">{activePlan.label}</p>
+            <h2 className="font-display text-3xl font-bold leading-tight">Rotina de hoje</h2>
+            <p className="mt-1 text-lg font-bold text-slate">{activePlan.label}</p>
           </div>
-          <span className="border-2 border-ink bg-lime px-3 py-1 text-sm font-bold">
+          <span className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-sm font-bold">
             {activePlan.tasks.length} passos
           </span>
         </div>
@@ -432,17 +586,17 @@ export function RoutinePlanner() {
         </div>
 
         {!isViewingToday ? (
-          <p className="mt-4 border-l-4 border-coral bg-mist px-3 py-2 text-sm font-bold">
+          <p className="mt-4 rounded-xl border-2 border-ink bg-coral/25 px-3 py-2 text-sm font-bold">
             Consulta: somente as tarefas do dia atual podem ser marcadas.
           </p>
         ) : null}
 
-        <div className="mt-4 border-2 border-ink bg-white px-4">
+        <div className="mt-4 overflow-hidden rounded-2xl border-2 border-ink bg-white px-4">
           {visiblePlan.tasks.map((task, index) => (
             <div key={`${visiblePlan.key}-${task.id}`} className="flex items-start gap-3">
               <span
                 aria-hidden="true"
-                className="mt-[1.35rem] w-6 shrink-0 font-display text-sm font-bold text-slate"
+                className="mt-2.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-sky font-display text-xs font-bold text-ink"
               >
                 {String(index + 1).padStart(2, "0")}
               </span>
@@ -459,18 +613,19 @@ export function RoutinePlanner() {
         </div>
       </section>
 
-      <section className="border-t-4 border-ink py-6">
+      <section className="border-t-2 border-mist py-7">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate">Todos os dias</p>
-            <h2 className="font-display text-3xl font-bold">Obrigatórios</h2>
+            <h2 className="font-display text-3xl font-bold leading-tight">
+              Compromissos de todos os dias
+            </h2>
           </div>
-          <span className="border-2 border-ink bg-coral px-3 py-1 text-sm font-bold">
-            {MANDATORY_TASKS.length} compromissos
+          <span className="rounded-full border-2 border-ink bg-coral px-3 py-1 text-sm font-bold">
+            {MANDATORY_TASKS.length} cuidados
           </span>
         </div>
 
-        <div className="mt-4 border-2 border-ink bg-white px-4">
+        <div className="mt-4 overflow-hidden rounded-2xl border-2 border-ink bg-white px-4">
           {MANDATORY_TASKS.map((task) => (
             <TaskRow
               key={task.id}
@@ -483,13 +638,22 @@ export function RoutinePlanner() {
         </div>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t-4 border-ink pt-6">
-        <p className="font-display text-xl font-bold">
-          {allComplete ? "Tudo pronto por hoje." : "Continue um passo de cada vez."}
-        </p>
+      <footer
+        className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-ink p-4 ${
+          allComplete ? "bg-mint" : "bg-white"
+        }`}
+      >
+        <div>
+          <p className="font-display text-2xl font-bold leading-tight">
+            {allComplete ? "Uhuul! Dia completo!" : "Continue um passo de cada vez."}
+          </p>
+          <p className="mt-1 text-sm font-bold text-slate">
+            {allComplete ? "Você cuidou de tudo hoje." : "Cada passo conta."}
+          </p>
+        </div>
         <button
           type="button"
-          className="min-h-11 border-2 border-ink px-4 py-2 font-bold hover:bg-lime"
+          className="min-h-11 rounded-xl border-2 border-ink px-4 py-2 font-bold hover:bg-sun"
           onClick={() => setResetOpen(true)}
         >
           Recomeçar o dia
@@ -506,6 +670,7 @@ export function RoutinePlanner() {
           setResetOpen(false);
         }}
       />
+      </div>
     </div>
   );
 }

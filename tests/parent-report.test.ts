@@ -56,4 +56,49 @@ describe("parent report", () => {
     expect(today?.completed).toBe(2);
     expect(today?.percentage).toBe(Math.round((2 / 29) * 100));
   });
+
+  it("builds progress for an explicit calendar week", () => {
+    const report = buildParentReport({
+      childName: "Lia",
+      todayKey: "2026-09-29",
+      current: {
+        version: 1,
+        date: "2026-09-29",
+        routine: "tue-thu-fri",
+        completed: ["make-bed"],
+        mandatoryCompleted: ["care-for-cats"],
+      },
+      history: {
+        version: 1,
+        days: {
+          "2026-09-28": {
+            routine: "mon-wed",
+            completed: ["make-bed"],
+            mandatoryCompleted: ["care-for-cats"],
+          },
+        },
+      },
+      dateKeys: [
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+      ],
+    });
+
+    expect(report.days.map((day) => day.dateKey)).toEqual([
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+    ]);
+    expect(report.days[0]?.registered).toBe(true);
+    expect(report.days[1]?.completed).toBe(2);
+  });
 });

@@ -1,12 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getCurrentWeekDateKeys,
   HISTORY_WINDOW_DAYS,
   readDailyHistory,
   recordDailyState,
 } from "@/lib/daily-history";
 
 describe("daily history", () => {
+  it("returns Monday through Sunday for the current week", () => {
+    expect(getCurrentWeekDateKeys("2026-09-29")).toEqual([
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+    ]);
+  });
+
   it("retains seven local days and removes older records", () => {
     const values = new Map<string, string>();
     const storage = {

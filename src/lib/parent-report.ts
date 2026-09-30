@@ -48,8 +48,10 @@ export function buildParentReport(input: {
   todayKey: string;
   current: DailyState;
   history: DailyHistory;
+  dateKeys?: string[];
 }): ParentReport {
-  const days = getRecentDateKeys(input.todayKey).map((dateKey): ParentReportDay => {
+  const dateKeys = input.dateKeys ?? getRecentDateKeys(input.todayKey);
+  const days = dateKeys.map((dateKey): ParentReportDay => {
     const plan = getRoutineForDate(parseDateKey(dateKey));
     const rawState = dateKey === input.current.date
       ? input.current

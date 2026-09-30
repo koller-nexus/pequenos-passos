@@ -37,6 +37,17 @@ test("keeps the child name after reload", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "Nome da criança" })).toHaveValue("Lia");
 });
 
+test("shows the overall weekly progress on the home screen", async ({ page }) => {
+  await page.goto("/");
+  await waitForPlanner(page);
+
+  await expect(page.getByRole("heading", { name: "Andamento da semana" })).toBeVisible();
+  await expect(
+    page.getByRole("progressbar", { name: "Andamento da semana até agora" }),
+  ).toBeVisible();
+  await expect(page.getByText("Segunda a domingo")).toBeVisible();
+});
+
 test("shows other routines as read-only", async ({ page }) => {
   await page.goto("/");
   await waitForPlanner(page);

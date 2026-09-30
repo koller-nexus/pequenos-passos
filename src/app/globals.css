@@ -27,13 +27,16 @@
 @theme {
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
-  --color-paper: #f4f7f2;
-  --color-ink: #17202a;
+  --color-paper: #edf7ff;
+  --color-ink: #16233a;
   --color-cobalt: #2e5bff;
-  --color-lime: #d9ff57;
-  --color-coral: #ff654f;
-  --color-mist: #dce5e8;
-  --color-slate: #52616d;
+  --color-lime: #e4ff65;
+  --color-coral: #ff6b5c;
+  --color-mist: #c8dbe6;
+  --color-slate: #45586a;
+  --color-sky: #b9e8ff;
+  --color-sun: #ffd85e;
+  --color-mint: #78e0b7;
 }
 
 :root {
@@ -54,10 +57,12 @@ html {
 body {
   min-width: 320px;
   margin: 0;
+  text-underline-offset: 2px;
 }
 
 button,
-input {
+input,
+dialog {
   font: inherit;
 }
 
@@ -70,14 +75,39 @@ input:disabled {
   cursor: not-allowed;
 }
 
+input {
+  caret-color: var(--color-cobalt);
+}
+
 :focus-visible {
-  outline: 3px solid var(--color-coral);
+  outline: 3px solid var(--color-ink);
   outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--color-sun);
 }
 
 ::selection {
   color: var(--color-ink);
   background: var(--color-lime);
+}
+
+dialog::backdrop {
+  background: rgb(22 35 58 / 62%);
+}
+
+* {
+  scrollbar-color: var(--color-coral) var(--color-mist);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-mist);
+  border-radius: 999px;
+  background: var(--color-coral);
 }
 
 .parent-report-day {
