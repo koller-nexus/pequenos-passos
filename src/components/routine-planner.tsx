@@ -229,7 +229,10 @@ function RoutineTabs({
   onSelect: (routine: RoutineKey) => void;
 }) {
   return (
-    <nav aria-label="Rotinas da semana" className="flex gap-2 overflow-x-auto pb-1">
+    <nav
+      aria-label="Rotinas da semana"
+      className="grid grid-cols-3 gap-2 pb-1 sm:flex"
+    >
       {ROUTINES.map((routine) => {
         const isSelected = routine.key === selectedRoutine;
         const isToday = routine.key === activeRoutine;
@@ -241,7 +244,7 @@ function RoutineTabs({
             aria-current={isToday ? "date" : undefined}
             aria-pressed={isSelected}
             onClick={() => onSelect(routine.key)}
-            className={`min-h-11 shrink-0 rounded-xl border-2 border-ink px-3 py-2 text-sm font-bold ${
+            className={`min-h-11 rounded-xl border-2 border-ink px-2 py-2 text-sm font-bold leading-tight sm:shrink-0 sm:px-3 ${
               isSelected
                 ? "bg-ink text-white"
                 : routine.key === "mon-wed"
@@ -323,8 +326,14 @@ function WeekProgress({
         </div>
         <div className="text-right">
           <p className="font-display text-4xl font-bold tabular-nums text-cobalt">{percentage}%</p>
-          <p className="text-sm font-bold text-slate">
-            {completed} de {total} passos até agora
+          <p
+            className="text-sm font-bold text-slate"
+            aria-label={`${completed} de ${total} passos até agora`}
+          >
+            <span className="sm:hidden">{completed}/{total} passos</span>
+            <span className="hidden sm:inline">
+              {completed} de {total} passos até agora
+            </span>
           </p>
         </div>
       </div>
@@ -519,7 +528,7 @@ export function RoutinePlanner() {
               />
             </div>
             <div>
-              <h1 className="font-display text-4xl font-bold leading-none sm:text-5xl">
+              <h1 className="font-display text-3xl font-bold leading-none sm:text-5xl">
                 Pequenos Passos
               </h1>
               <p className="mt-2 max-w-xs text-sm font-bold text-white">
@@ -617,7 +626,7 @@ export function RoutinePlanner() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl font-bold leading-tight">
-              Compromissos de todos os dias
+              Cuidados de todo dia
             </h2>
           </div>
           <span className="rounded-full border-2 border-ink bg-coral px-3 py-1 text-sm font-bold">
